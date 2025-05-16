@@ -191,3 +191,35 @@ char *compute_post_request(char *host, char *url, char* content_type, char **bod
     free(body_data_buffer);
     return message;
 }
+
+char *compute_delete_request(char *host, char *url,
+                          char **cookies, int cookies_count) 
+{
+    char *message = calloc(BUFLEN, sizeof(char));
+    char *line = calloc(LINELEN, sizeof(char));
+
+    // line POST
+    sprintf(line, "DELETE %s HTTP/1.1", url);
+    compute_message(message, line);
+
+    //Host
+    sprintf(line, "Host: %s", host);
+    compute_message(message, line);
+
+
+    // Adaugă Cookie dacă e cazul
+    if (cookies != NULL) {
+        // sprintf(line, "Cookie: ");
+        for (int i = 0; i < cookies_count; i++) {
+            strcat(line, cookies[i]);
+            if (i < cookies_count - 1) strcat(line, "; ");
+        }
+        compute_message(message, line);
+    }
+
+    // Linie finală
+    compute_message(message, "");
+
+    free(line);
+    return message;
+}
