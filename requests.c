@@ -108,42 +108,53 @@
 #include "helpers.h"
 #include "requests.h"
 char *compute_get_request(char *host, char *url, char *query_params,
-                          char **cookies, int cookies_count)
-                          {
-      char *message = calloc(BUFLEN, sizeof(char));
-      char *line = calloc(LINELEN, sizeof(char));
-  
-      // Linea GET
-      if (query_params != NULL) {
-          sprintf(line, "GET %s?%s HTTP/1.1", url, query_params);
-      } else {
-          sprintf(line, "GET %s HTTP/1.1", url);
-      }
-      compute_message(message, line);
-  
-      // Adaugă Host
-      sprintf(line, "Host: %s", host);
-      compute_message(message, line);
-  
-      // Adaugă Cookie dacă e cazul
-      if (cookies != NULL) {
-          sprintf(line, "Cookie: ");
-          for (int i = 0; i < cookies_count; i++) {
-              strcat(line, cookies[i]);
-              if (i < cookies_count - 1) strcat(line, "; ");
-          }
-          compute_message(message, line);
-      }
-  
-      // Linie finală
-      compute_message(message, "");
-  
-      free(line);
-      return message;
-  }
-  
-char *compute_post_request(char *host, char *url, char* content_type, char **body_data,
-    int body_data_fields_count, char **cookies, int cookies_count)
+                        char **cookies, int cookies_count)
+                        {
+    char *message = calloc(BUFLEN, sizeof(char));
+    char *line = calloc(LINELEN, sizeof(char));
+
+    // Linea GET
+    if (query_params != NULL) {
+        sprintf(line, "GET %s%s HTTP/1.1", url, query_params);
+    } else {
+        sprintf(line, "GET %s HTTP/1.1", url);
+    }
+    compute_message(message, line);
+
+    // Adaugă Host
+    sprintf(line, "Host: %s", host);
+    compute_message(message, line);
+
+    // Adaugă Cookie dacă e cazul
+    // if (cookies != NULL) {
+    //   sprintf(line, "Cookie: ");
+    // sprintf(line, "");
+    //     for (int i = 0; i < cookies_count && (cookies[i] != NULL); i++) {
+    //     strcat(line, cookies[i]);
+    //     if (i < cookies_count - 1) strcat(line, "; ");
+    //     }
+    //     compute_message(message, line);
+    // }
+    if (cookies[0] != NULL) {
+        sprintf(line, "%s", cookies[0]);
+        compute_message(message, line);
+    }
+    // Authorization: Bearer eijjkwuqioueu9182712093801293
+    if (cookies[1] != NULL) {
+        sprintf(line, "Authorization: Bearer %s", cookies[1]);
+        compute_message(message, line);
+    }
+
+
+    // Linie finală
+    compute_message(message, "");
+
+    free(line);
+    return message;
+}
+
+char *compute_post_request(char *host, char *url, char* content_type, char *body_data,
+    char **cookies, int cookies_count)
 {
     char *message = calloc(BUFLEN, sizeof(char));
     char *line = calloc(LINELEN, sizeof(char));
@@ -157,11 +168,12 @@ char *compute_post_request(char *host, char *url, char* content_type, char **bod
     sprintf(line, "Host: %s", host);
     compute_message(message, line);
 
-    // 3. Body content
-    for (int i = 0; i < body_data_fields_count; i++) {
-    strcat(body_data_buffer, body_data[i]);
-    if (i < body_data_fields_count - 1) strcat(body_data_buffer, "&");
-    }
+    // // 3. Body content
+    // for (int i = 0; i < body_data_fields_count; i++) {
+    // strcat(body_data_buffer, body_data[i]);
+    // if (i < body_data_fields_count - 1) strcat(body_data_buffer, "&");
+    // }
+    strcat(body_data_buffer, body_data);
 
     // 4. Content-Type
     sprintf(line, "Content-Type: %s", content_type);
@@ -172,13 +184,22 @@ char *compute_post_request(char *host, char *url, char* content_type, char **bod
     compute_message(message, line);
 
     // 6. Cookie (opțional)
-    if (cookies != NULL) {
-    sprintf(line, "Cookie: ");
-    for (int i = 0; i < cookies_count; i++) {
-    strcat(line, cookies[i]);
-    if (i < cookies_count - 1) strcat(line, "; ");
+    // if (cookies != NULL) {
+    // sprintf(line, "Cookie: ");
+    // for (int i = 0; i < cookies_count; i++) {
+    // strcat(line, cookies[i]);
+    // if (i < cookies_count - 1) strcat(line, "; ");
+    // }
+    // compute_message(message, line);
+    // }
+    if (cookies[0] != NULL) {
+        sprintf(line, "%s", cookies[0]);
+        compute_message(message, line);
     }
-    compute_message(message, line);
+    // Authorization: Bearer eijjkwuqioueu9182712093801293
+    if (cookies[1] != NULL) {
+        sprintf(line, "Authorization: Bearer %s", cookies[1]);
+        compute_message(message, line);
     }
 
     // 7. Linie goală
@@ -208,14 +229,24 @@ char *compute_delete_request(char *host, char *url,
 
 
     // Adaugă Cookie dacă e cazul
-    if (cookies != NULL) {
-        // sprintf(line, "Cookie: ");
-        for (int i = 0; i < cookies_count; i++) {
-            strcat(line, cookies[i]);
-            if (i < cookies_count - 1) strcat(line, "; ");
-        }
+    // if (cookies != NULL) {
+    //     // sprintf(line, "Cookie: ");
+    //     for (int i = 0; i < cookies_count && (cookies[i] != NULL); i++) {
+    //         strcat(line, cookies[i]);
+    //         if (i < cookies_count - 1) strcat(line, "; ");
+    //     }
+    //     compute_message(message, line);
+    // }
+    if (cookies[0] != NULL) {
+        sprintf(line, "%s", cookies[0]);
         compute_message(message, line);
     }
+    // Authorization: Bearer eijjkwuqioueu9182712093801293
+    if (cookies[1] != NULL) {
+        sprintf(line, "Authorization: Bearer %s", cookies[1]);
+        compute_message(message, line);
+    }
+
 
     // Linie finală
     compute_message(message, "");
