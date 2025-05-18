@@ -125,20 +125,20 @@ char *compute_get_request(char *host, char *url, char *query_params,
     sprintf(line, "Host: %s", host);
     compute_message(message, line);
 
+    memset(line, 0, LINELEN);
     // Adaugă Cookie dacă e cazul
-    // if (cookies != NULL) {
-    //   sprintf(line, "Cookie: ");
-    // sprintf(line, "");
-    //     for (int i = 0; i < cookies_count && (cookies[i] != NULL); i++) {
-    //     strcat(line, cookies[i]);
-    //     if (i < cookies_count - 1) strcat(line, "; ");
-    //     }
-    //     compute_message(message, line);
-    // }
-    if (cookies[0] != NULL) {
-        sprintf(line, "%s", cookies[0]);
+    if (cookies != NULL) {
+
+        for (int i = 0; i < cookies_count && (cookies[i] != NULL); i++) {
+            strcat(line, cookies[i]);
+            if (i < cookies_count - 1) strcat(line, "; ");
+        }
         compute_message(message, line);
     }
+    // if (cookies[0] != NULL) {
+    //     sprintf(line, "%s", cookies[0]);
+    //     compute_message(message, line);
+    // }
     // Authorization: Bearer eijjkwuqioueu9182712093801293
     if (cookies[1] != NULL) {
         sprintf(line, "Authorization: Bearer %s", cookies[1]);
