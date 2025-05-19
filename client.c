@@ -722,7 +722,7 @@ void add_cookie(char **cookies, char *s_cookie, char *msgrecv) {
     }
 }
 
-char *json_builder(char data[][200], char names[][50]) {
+char *json_builder(char data[][500], char names[][50]) {
     JSON_Value *root_value = json_value_init_object();
     if (root_value == NULL) {
         fprintf(stderr, "Error: json_value_init_object failed in json_builder\n");
@@ -756,7 +756,7 @@ char *json_builder(char data[][200], char names[][50]) {
 }
 
 
-void zero_matrix(char types[][200], char names[][50]) {
+void zero_matrix(char types[][500], char names[][50]) {
     int i = 0;
     while (types[i][0] != '\0') {
         memset(types[i], 0, 50);
@@ -834,7 +834,7 @@ int main(int argc, char *argv[])
     char session_cookies[200];
     
     
-    char matrix[6][200];
+    char matrix[6][500];
     matrix[0][0] = '\0';
     char matrix_names[6][50];
     matrix_names[0][0] = '\0';
@@ -1026,6 +1026,11 @@ int main(int argc, char *argv[])
             send_to_server(sockfd, message);
             msgrecv = receive_from_server(sockfd);
 
+            if (strstr(msgrecv, "200 OK") != NULL) {
+                printf("SUCCESS: Utilizator șters\n");
+            } else {
+                printf("ERROR: nu exista utilizatorul\n");
+            }
             print_messages(message, msgrecv);
 
             add_cookie(cookies, session_cookies, msgrecv);
@@ -1281,7 +1286,7 @@ int main(int argc, char *argv[])
             replace_char(year, '\n', '\0');
 
             printf("description=\n");
-            char description[200];
+            char description[500];
             fgets(description, sizeof(description), stdin);
             replace_char(description, '\n', '\0');
 
@@ -1289,9 +1294,7 @@ int main(int argc, char *argv[])
             char rating[10];
             fgets(rating, sizeof(rating), stdin);
             replace_char(rating, '\n', '\0');
-            // double rats;
-            // scanf("%lf", &rats);
-            // printf("%s\n", rating);
+
             zero_matrix(matrix, matrix_names);
 
             strcpy(matrix[0], title);
@@ -1352,6 +1355,222 @@ int main(int argc, char *argv[])
 
             print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
+
+        } else 
+        // -------------------- update_movie ----------------------
+        if (strcmp(buff.data, "update_movie\n") == 0) {
+
+            /*
+                update_movie
+
+                id=2
+                title=New Title
+                year=2009
+                description=sci-fi
+                rating=10.0
+
+                Input
+                update_movie
+                id=2
+                title=New Title
+                year=2009
+                description=sci-fi
+                rating=10.0
+                Output
+
+                SUCCESS: Film actualizat
+                            
+                Ruta de acces:
+
+                PUT /api/v1/tema/library/movies/:movieId
+                Tip payload:
+
+                application/json
+                Payload:
+
+                {
+                    "title": String,
+                    "year": Number,
+                    "description": String,
+                    "rating": Number
+                }
+                Observații:
+                🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
+
+                Erori tratate:
+                👎 Fără acces library.
+                👎 ID invalid.
+                👎 Date invalide/incomplete.
+            
+            
+            */
+            printf("id=\n");
+            char id[50];
+            fgets(id, sizeof(id), stdin);
+            replace_char(id, '\n', '\0');
+
+            printf("title=\n");
+            char title[50];
+            fgets(title, sizeof(title), stdin);
+            replace_char(title, '\n', '\0');
+
+            printf("year=\n");
+            char year[10];
+            fgets(year, sizeof(year), stdin);
+            replace_char(year, '\n', '\0');
+
+            printf("description=\n");
+            char description[500];
+            fgets(description, sizeof(description), stdin);
+            replace_char(description, '\n', '\0');
+
+            printf("rating=\n");
+            char rating[10];
+            fgets(rating, sizeof(rating), stdin);
+            replace_char(rating, '\n', '\0');
+
+
+            char url[100];
+            sprintf(url, "/api/v1/tema/library/movies/%s", id);
+
+            zero_matrix(matrix, matrix_names);
+
+            strcpy(matrix[0], title);
+            strcpy(matrix[1], year);
+            strcpy(matrix[2], description);
+            strcpy(matrix[3], rating);
+            matrix[4][0] = '\0';
+
+            strcpy(matrix_names[0], "title");
+            strcpy(matrix_names[1], "year");
+            strcpy(matrix_names[2], "description");
+            strcpy(matrix_names[3], "rating");
+            matrix_names[4][0] = '\0';
+
+            char *json_string = json_builder(matrix, matrix_names);
+
+            if (json_string == NULL) {
+                fprintf(stderr, "Error: Failed to create JSON payload.\n");
+            } else {
+                message = compute_put_request(host, url, cookies, MAX_COOKIES, json_string);
+                send_to_server(sockfd, message);
+                json_free_serialized_string(json_string);
+            }
+
+            msgrecv = receive_from_server(sockfd);
+            if (strstr(msgrecv, "Movie already exists")) {
+                printf("ERROR: movie already exists\n");
+            } else if (strstr(msgrecv, "400 BAD REQUEST")) {
+                printf("ERROR: date add_movie incomplete\n");
+            } else {
+                printf("SUCCES: movie added with success\n");
+            }
+
+            print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
+            
+
+        } else 
+        // --------------------- delete_movie ---------------------
+        if (strcmp(buff.data, "delete_movie\n") == 0) {
+            /*
+                DELETE /api/v1/tema/library/movies/:movieId
+
+                Input
+                delete_movie
+                id=10
+                Output
+
+                SUCCESS: Film șters cu succes
+
+                Erori tratate:
+                👎 Fără acces library.
+                👎 ID invalid.
+            */
+            printf("id=\n");
+            char id[50];
+            fgets(id, sizeof(id), stdin);
+            replace_char(id, '\n', '\0');
+
+            char url[100];
+            snprintf(url, sizeof(url), "/api/v1/tema/library/movies/%s", id);
+
+            message = compute_delete_request(host, url, cookies, MAX_COOKIES);
+
+            send_to_server(sockfd, message);
+            msgrecv = receive_from_server(sockfd);
+            if (strstr(msgrecv, "200 OK") != NULL) {
+                printf("SUCCESS: Film șters\n");
+            } else if (strstr(msgrecv, "UNAUTHORIZED") != NULL) {
+                printf("ERROR: nu sunt permisiuni\n");
+            } else {
+                printf("ERROR: nu s-a gasit filmul\n");
+            }
+
+            print_messages(message, msgrecv);
+
+            add_cookie(cookies, session_cookies, msgrecv);
+
+        } else
+        // --------------------- get_collections  ---------------------
+        if (strcmp(buff.data, "get_collections\n") == 0) {
+            /*
+                GET /api/v1/tema/library/collections
+                    Răspuns:
+
+                    [
+                    {
+                        "id": Number,
+                        "title": String,
+                        "owner": String,
+                        "movies": [
+                        {
+                            "id": Number,
+                            "title": String
+                        }
+                        ]
+                    }
+                    ]
+
+                Output
+                    SUCCESS: Lista colecțiilor
+                    #1: Colectie A
+                    #2: Colectie B
+
+            */
+            char *url = "/api/v1/tema/library/collections";
+
+            message = compute_get_request(host, url, NULL,  cookies, MAX_COOKIES);
+
+            send_to_server(sockfd, message);
+            msgrecv = receive_from_server(sockfd);
+
+            char *content_ptr = strstr(msgrecv, "{\"collections");
+            JSON_Value *root_value = json_parse_string(content_ptr);
+            JSON_Object *root_object = json_value_get_object(root_value);
+            JSON_Array *collections = json_object_get_array(root_object, "collections");
+
+            size_t count = json_array_get_count(collections);
+
+            if (strstr(msgrecv, "\"collections\":[") != NULL) {
+                printf("SUCCESS: Lista colecțiilor\n");
+                for (size_t i = 0; i < count; i++) {
+                    JSON_Object *collection = json_array_get_object(collections, i);
+                    int id = (int)json_object_get_number(collection, "id");
+                    const char *title = json_object_get_string(collection, "title");
+
+                    printf("#%d %s\n", id, title);
+                }
+            } else {
+                printf("ERROR: serverul nu a intors lista colecțiilor\n");
+            }
+
+
+            print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
+
+            json_value_free(root_value);
+
 
         }
 

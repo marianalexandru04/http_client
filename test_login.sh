@@ -6,8 +6,8 @@
     echo "766d189849e0"
     
     # test delete_user
-    # echo "delete_user"
-    # echo "test_1747401953_EZVoDD"
+    echo "delete_user"
+    echo "test"
     # echo "delete_user"
     # echo "test_1747402256_dhpcWs"
     # echo "delete_user"
