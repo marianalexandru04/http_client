@@ -1053,6 +1053,11 @@ int main(int argc, char *argv[])
                 *ptr2 = '\0';
                 strcpy(cookies[0], session_cookies);
             }
+            if (strstr(msgrecv, "Admin logged out successfully") != NULL) {
+                printf("SUCCES: Admin logged out successfully\n");
+            } else {
+                printf("ERROR: couldn't log out the admin\n");
+            }
 
 
         } else
@@ -1122,6 +1127,12 @@ int main(int argc, char *argv[])
                 char *ptr2 = strchr(session_cookies,';');
                 *ptr2 = '\0';
                 strcpy(cookies[0], session_cookies);
+            }
+
+            if (strstr(msgrecv, "User logged in successfully") != NULL) {
+                printf("SUCCES: User logged in successfully\n");
+            } else {
+                printf("ERROR: couldn't log in the user\n");
             }
 
 
@@ -1276,22 +1287,13 @@ int main(int argc, char *argv[])
             // POST /api/v1/tema/library/movies
 
             if (json_string == NULL) {
-                fprintf(stderr, "Error: Failed to create JSON payload for add_movie.\\n");
+                fprintf(stderr, "Error: Failed to create JSON payload for add_movie.\n");
             } else {
-
-
                 message = compute_post_request(host, url, "application/json",  json_string, cookies, MAX_COOKIES);
-
-
-                // if (!isUser(users, username, &usercount)) // This logic was commented out
                 send_to_server(sockfd, message);
-
                 json_free_serialized_string(json_string);
             }
-            // json_value_free(myroot); // Removed
 
-
-            // printf("\\n%s\\n", message);
             char *msgrecv = receive_from_server(sockfd);
             if (strstr(msgrecv, "User already exists"))
                 printf("ERROR: user already exists\n");
@@ -1325,7 +1327,11 @@ int main(int argc, char *argv[])
                 *ptr2 = '\0';
                 strcpy(cookies[0], session_cookies);
             }
-            
+            if (strstr(msgrecv, "User logged out successfully") != NULL) {
+                printf("SUCCES: User logged out successfully\n");
+            } else {
+                printf("ERROR: couldn't log out the user\n");
+            }
         }
 
 
