@@ -706,26 +706,23 @@ typedef struct {
     char *password;
 } User;
 
+void print_messages(char *msg1, char *msg2) {
+    if (msg1 != NULL)
+        printf("%s\n", msg1);
+    if (msg2 != NULL)
+        printf("%s\n", msg2);
+}
+void add_cookie(char **cookies, char *s_cookie, char *msgrecv) {
+    char * ptr = strstr(msgrecv, "Set-Cookie:");
+    if (ptr != NULL) {
+        strcpy(s_cookie, ptr + 4);
+        char *ptr2 = strchr(s_cookie,';');
+        *ptr2 = '\0';
+        strcpy(cookies[0], s_cookie);
+    }
+}
 
-// char *json_builder(char types[][50], char names[][50]) {
-//     JSON_Value *root_value = json_value_init_object();
-//     if (root_value == NULL) {
-//         fprintf(stderr, "Error: json_value_init_object failed in json_builder\\n");
-//         return NULL;
-//     }
-//     JSON_Object *root_object = json_value_get_object(root_value);
-
-//     int i = 0;
-//     while (types[i][0] != '\0') {
-//         json_object_set_string(root_object, names[i], types[i]);
-//         i++;
-//     }
-//     char *json_string = json_serialize_to_string(root_value);
-//     json_value_free(root_value); // Free the JSON_Value structure itself
-//     return json_string;
-// }
-
-char *json_builder(char types[][50], char names[][50]) {
+char *json_builder(char data[][200], char names[][50]) {
     JSON_Value *root_value = json_value_init_object();
     if (root_value == NULL) {
         fprintf(stderr, "Error: json_value_init_object failed in json_builder\n");
@@ -734,22 +731,32 @@ char *json_builder(char types[][50], char names[][50]) {
     JSON_Object *root_object = json_value_get_object(root_value);
 
     int i = 0;
-    while (types[i][0] != '\0') {
-        if(strcmp(names[i], "year") == 0 || strcmp(names[i], "rating") == 0) {
-            double nr = strtod(types[i], NULL);
-            json_object_set_number(root_object, names[i], nr);
+    while (data[i][0] != '\0') {
+        // if(strcmp(names[i], "year") == 0 || strcmp(names[i], "rating") == 0) {
+        // if(strcmp(names[i], "year") == 0) {
+        // double nr = strtod(data[i], NULL);
+        if(strstr(names[i], "year") != NULL) {
+
+            int year;
+            sscanf(data[i], "%d", &year);
+            json_object_set_number(root_object, names[i], year);
+        } else if(strstr(names[i], "rating") != NULL) {
+            double rating;
+            sscanf(data[i], "%lf", &rating);
+            // printf("%lf\n", rating);
+            json_object_set_number(root_object, names[i], rating);
         } else {
-            json_object_set_string(root_object, names[i], types[i]);
+            json_object_set_string(root_object, names[i], data[i]);
         }
         i++;
     }
     char *json_string = json_serialize_to_string(root_value);
-    json_value_free(root_value); // Free the JSON_Value structure itself
+    json_value_free(root_value);
     return json_string;
 }
 
 
-void zero_matrix(char types[][50], char names[][50]) {
+void zero_matrix(char types[][200], char names[][50]) {
     int i = 0;
     while (types[i][0] != '\0') {
         memset(types[i], 0, 50);
@@ -784,22 +791,23 @@ bool isUser(User **users, char* username, int * usercount) {
     }
     return false;
 }
-void add_cookie(char  ** cookies, char * cookie) {
-    for(int i = 0; i < MAX_COOKIES; i++) { // MAX_COOKIES is 10
-        if(cookies[i] == NULL) {
-            cookies[i] = malloc(strlen(cookie) + 1); // Corrected allocation size
-            if (cookies[i] == NULL) {
-                perror("Failed to allocate memory for cookie");
-                return;
-            }
-            strcpy(cookies[i], cookie);
-            return;
-        }
-    }
-    fprintf(stderr, "No space to add new cookie. Cookie array full.\\n");
-}
+// void add_cookie(char  ** cookies, char * cookie) {
+//     for(int i = 0; i < MAX_COOKIES; i++) { // MAX_COOKIES is 10
+//         if(cookies[i] == NULL) {
+//             cookies[i] = malloc(strlen(cookie) + 1); // Corrected allocation size
+//             if (cookies[i] == NULL) {
+//                 perror("Failed to allocate memory for cookie");
+//                 return;
+//             }
+//             strcpy(cookies[i], cookie);
+//             return;
+//         }
+//     }
+//     fprintf(stderr, "No space to add new cookie. Cookie array full.\\n");
+// }
 int main(int argc, char *argv[])
 {
+    char *msgrecv;
     char *message;
     char *response;
     int sockfd;
@@ -826,7 +834,7 @@ int main(int argc, char *argv[])
     char session_cookies[200];
     
     
-    char matrix[6][50];
+    char matrix[6][200];
     matrix[0][0] = '\0';
     char matrix_names[6][50];
     matrix_names[0][0] = '\0';
@@ -836,6 +844,7 @@ int main(int argc, char *argv[])
 
     char stdincmd[1000];
     while (1) {
+        msgrecv = (char*)calloc(5000, sizeof(char));
         message = (char*)calloc(1000, sizeof(char));
         response = (char*)calloc(1000, sizeof(char));
         buffer buff = buffer_init();
@@ -882,28 +891,20 @@ int main(int argc, char *argv[])
             );
 
             send_to_server(sockfd, message);
-            printf("%s\n", message);
 
-            char *msgrecv = receive_from_server(sockfd);
-            printf("%s\n", msgrecv);
+            msgrecv = receive_from_server(sockfd);
 
+            print_messages(message, msgrecv);
             if (strstr(msgrecv, "Admin logged in successfully")) {
                 printf("SUCCESS: Admin autentificat cu succes\n");
-                char * ptr = strstr(msgrecv, "Set-Cookie:");
-                strcpy(session_cookies, ptr + 4);
-                char *ptr2 = strchr(session_cookies,';');
-                *ptr2 = '\0';
-                strcpy(cookies[0], session_cookies);
 
-                printf("%s\n", cookies[0]);
 
             } else {
                 printf("ERROR: admin already logged in\n");
             }
-
             
-            // printf("%s", msgrecv);
-            // fflush(stdout);
+            add_cookie(cookies, session_cookies, msgrecv);
+
 
         } else 
         // -------------------- add user----------------------
@@ -959,30 +960,26 @@ int main(int argc, char *argv[])
             // json_value_free(myroot); // Removed
 
 
-            printf("%s\n", message);
-            char *msgrecv = receive_from_server(sockfd);
+            msgrecv = receive_from_server(sockfd);
             if (strstr(msgrecv, "User already exists"))
                 printf("ERROR: user already exists\n");
-            printf("\n%s\n", msgrecv);
+            else
+                printf("SUCCES: user added\n");
+
+            print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
 
         } else 
         // --------------------- get_users ---------------------
         if (strcmp(buff.data, "get_users\n") == 0) {
 
+            char *url = "/api/v1/tema/admin/users";
 
-            compute_message(message, "GET /api/v1/tema/admin/users HTTP/1.1");
-            compute_message(message, "Host: 63.32.125.183:8081");
-            // char tmp[250];
-            // compute_message(message, tmp);
-            // sprintf(tmp, "%s", cookies[0]);
-            compute_message(message, cookies[0]);
-            compute_message(message, "Connection: keep-alive");
-            compute_message(message, "");
+            message = compute_get_request(host, url, NULL, cookies, MAX_COOKIES);
 
-            // sleep(1);
             send_to_server(sockfd, message);
 
-            char *msgrecv = receive_from_server(sockfd);
+            msgrecv = receive_from_server(sockfd);
 
             char *content_ptr = strstr(msgrecv, "{\"users");
             JSON_Value *root_value = json_parse_string(content_ptr);
@@ -991,18 +988,23 @@ int main(int argc, char *argv[])
 
             size_t count = json_array_get_count(users);
 
-            printf("SUCCESS: Lista utilizatorilor\n");
-            for (size_t i = 0; i < count; i++) {
-                JSON_Object *user = json_array_get_object(users, i);
-                int id = (int)json_object_get_number(user, "id");
-                const char *username = json_object_get_string(user, "username");
-                const char *password = json_object_get_string(user, "password");
+            if (strstr(msgrecv, "200 OK")) {
+                printf("SUCCESS: Lista utilizatorilor\n");
+                for (size_t i = 0; i < count; i++) {
+                    JSON_Object *user = json_array_get_object(users, i);
+                    int id = (int)json_object_get_number(user, "id");
+                    const char *username = json_object_get_string(user, "username");
+                    const char *password = json_object_get_string(user, "password");
 
-                printf("#%d %s:%s\n", id, username, password);
+                    printf("#%d %s:%s\n", id, username, password);
+                }
             }
-            printf("%s\n", message);
-            printf("%s\n", msgrecv);
+            else 
+                printf("ERROR: nu s-a putut accesa lista cu utilizatori\n");
 
+
+            print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
             json_value_free(root_value);
         } else 
         // --------------------- delete_user ---------------------
@@ -1019,21 +1021,20 @@ int main(int argc, char *argv[])
             char url[100];
             snprintf(url, sizeof(url), "/api/v1/tema/admin/users/%s", username);
 
-
             message = compute_delete_request(host, url, cookies, MAX_COOKIES);
 
             send_to_server(sockfd, message);
-            char *msgrecv = receive_from_server(sockfd);
-            printf("%s\n", message);
-            printf("%s\n", msgrecv);
+            msgrecv = receive_from_server(sockfd);
 
+            print_messages(message, msgrecv);
+
+            add_cookie(cookies, session_cookies, msgrecv);
 
         } else
         // --------------------- logout_admin ---------------------
         if (strcmp(buff.data, "logout_admin\n") == 0) {
             /*
                 GET /api/v1/tema/admin/logout
-
             */
             char *url = "/api/v1/tema/admin/logout";
 
@@ -1042,17 +1043,11 @@ int main(int argc, char *argv[])
             message = compute_get_request(host, url, NULL,  cookies, MAX_COOKIES);
 
             send_to_server(sockfd, message);
-            char *msgrecv = receive_from_server(sockfd);
-            printf("%s\n", message);
-            printf("%s\n", msgrecv);
+            msgrecv = receive_from_server(sockfd);
 
-            char * ptr = strstr(msgrecv, "Set-Cookie:");
-            if (ptr != NULL) {
-                strcpy(session_cookies, ptr + 4);
-                char *ptr2 = strchr(session_cookies,';');
-                *ptr2 = '\0';
-                strcpy(cookies[0], session_cookies);
-            }
+            print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
+
             if (strstr(msgrecv, "Admin logged out successfully") != NULL) {
                 printf("SUCCES: Admin logged out successfully\n");
             } else {
@@ -1111,23 +1106,16 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Error: Failed to create JSON payload for user login.\n");
             } else {
                 message = compute_post_request(host, url, "application/json",  json_string, cookies, MAX_COOKIES);
-                // json_free_serialized_string(json_string); // compute_post_request likely uses it, free after send
-                // json_value_free(myroot); // Removed
                 send_to_server(sockfd, message);
-                // free(message); // Assuming compute_post_request allocates message
-                json_free_serialized_string(json_string); // Free json_string here
+                json_free_serialized_string(json_string);
             }
-            char *msgrecv = receive_from_server(sockfd);
-            printf("%s\n", message);
-            printf("%s\n", msgrecv);
+            msgrecv = receive_from_server(sockfd);
 
-            char * ptr = strstr(msgrecv, "Set-Cookie:");
-            if (ptr != NULL) {
-                strcpy(session_cookies, ptr + 4);
-                char *ptr2 = strchr(session_cookies,';');
-                *ptr2 = '\0';
-                strcpy(cookies[0], session_cookies);
-            }
+            print_messages(message, msgrecv);
+
+            add_cookie(cookies, session_cookies, msgrecv);
+
+
 
             if (strstr(msgrecv, "User logged in successfully") != NULL) {
                 printf("SUCCES: User logged in successfully\n");
@@ -1151,23 +1139,22 @@ int main(int argc, char *argv[])
             message = compute_get_request(host, url, NULL,  cookies, MAX_COOKIES);
 
             send_to_server(sockfd, message);
-            char *msgrecv = receive_from_server(sockfd);
-            printf("%s\n", message);
+            msgrecv = receive_from_server(sockfd);
 
-            printf("%s\n", msgrecv);
-
-            printf("SUCCESS: Token JWT primit\n");
 
             char * ptr = strstr(msgrecv, "\"token\":\"");
             strcpy(session_cookies, ptr + 9);
             char *ptr2 = strchr(session_cookies,'"');
             *ptr2 = '\0';
-            // add_cookie(cookies, session_cookies);
-            // if(realloc(cookies[1], strlen(session_cookies) + 1) == NULL) {
-            //     printf("eroare realloc\n");
-            // }
             strcpy(cookies[1], session_cookies);
 
+            if (ptr != NULL) {
+                printf("SUCCESS: Token JWT primit\n");
+            } else {
+                printf("ERROR: token-ul jwt nu a fost primit\n");
+            }
+            print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
 
 
         } else
@@ -1185,12 +1172,9 @@ int main(int argc, char *argv[])
             
             // char * message = compute_get_request(host, url, NULL,  cookies.cookies, cookies.count);
             message = compute_get_request(host, url, NULL,  cookies, MAX_COOKIES);
-            printf("%s\n", message);
 
             send_to_server(sockfd, message);
-            char *msgrecv = receive_from_server(sockfd);
-
-            printf("%s", msgrecv);
+            msgrecv = receive_from_server(sockfd);
 
             char *content_ptr = strstr(msgrecv, "{\"movies");
             JSON_Value *root_value = json_parse_string(content_ptr);
@@ -1199,19 +1183,22 @@ int main(int argc, char *argv[])
 
             size_t count = json_array_get_count(movies);
 
-            printf("SUCCESS: Lista filmelor\n");
-            for (size_t i = 0; i < count; i++) {
-                JSON_Object *user = json_array_get_object(movies, i);
-                int id = (int)json_object_get_number(user, "id");
-                const char *title = json_object_get_string(user, "title");
+            if (strstr(msgrecv, "\"movies\":[") != NULL) {
+                printf("SUCCESS: Lista filmelor\n");
+                for (size_t i = 0; i < count; i++) {
+                    JSON_Object *movie = json_array_get_object(movies, i);
+                    int id = (int)json_object_get_number(movie, "id");
+                    const char *title = json_object_get_string(movie, "title");
 
-                printf("#%d %s\n", id, title);
+                    printf("#%d %s\n", id, title);
+                }
+            } else {
+                printf("ERROR: serverul nu a intors lista cu filme\n");
             }
-            // char * ptr = strstr(msgrecv, "Set-Cookie:");
-            // strcpy(session_cookies, ptr + 4);
-            // char *ptr2 = strchr(session_cookies,';');
-            // *ptr2 = '\0';
-            // strcpy(cookies[0], session_cookies);
+
+
+            print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
 
             json_value_free(root_value);
 
@@ -1230,20 +1217,54 @@ int main(int argc, char *argv[])
                 }
 
 
+                SUCCESS: Detalii film
+                title: The Dark Knight
+                year: 2010
+                description: sci-fi
+                rating: 8.8
             */
             char *url = "/api/v1/tema/library/movies/";
             printf("id=\n");
             char id[10];
             fgets(id, sizeof(id), stdin);
             replace_char(id, '\n', '\0');
-            // char * message = compute_get_request(host, url, NULL,  cookies.cookies, cookies.count);
+
             message = compute_get_request(host, url, id,  cookies, MAX_COOKIES);
 
             send_to_server(sockfd, message);
-            char *msgrecv = receive_from_server(sockfd);
-            printf("%s\n", message);
+            msgrecv = receive_from_server(sockfd);
 
-            printf("%s\n", msgrecv);
+
+
+            if (strstr(msgrecv, "\"id\"") != NULL) {
+                // {"description":"test","id":75707,"rating":"6.0","title":"test","user_id":27291,"year":2000}
+                char *content_ptr = strstr(msgrecv, "{\"description");
+                JSON_Value *root_value = json_parse_string(content_ptr);
+                JSON_Object *root_object = json_value_get_object(root_value);
+
+
+                const char *description = json_object_get_string(root_object, "description");
+                const char *rating = json_object_get_string(root_object, "rating");
+                const char *title = json_object_get_string(root_object, "title");
+                int year = (int)json_object_get_number(root_object, "year");
+
+                printf("SUCCESS: Detalii film\n"
+                    "title: %s\n"
+                    "year: %d\n"
+                    "description: %s\n"
+                    "rating: %s\n",
+                    title, year, description, rating);
+
+                json_value_free(root_value);
+
+            } else if (strstr(msgrecv, "Movie not found") != NULL) {
+                 printf("ERROR: Movie not found, invalid id\n");
+            } else {
+                printf("ERROR: serverul zice ca nu am acces la filme\n");
+            }
+
+            // print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
 
         } else 
         // -------------------- add_movie ----------------------
@@ -1260,7 +1281,7 @@ int main(int argc, char *argv[])
             replace_char(year, '\n', '\0');
 
             printf("description=\n");
-            char description[50];
+            char description[200];
             fgets(description, sizeof(description), stdin);
             replace_char(description, '\n', '\0');
 
@@ -1268,13 +1289,16 @@ int main(int argc, char *argv[])
             char rating[10];
             fgets(rating, sizeof(rating), stdin);
             replace_char(rating, '\n', '\0');
-
+            // double rats;
+            // scanf("%lf", &rats);
+            // printf("%s\n", rating);
             zero_matrix(matrix, matrix_names);
 
             strcpy(matrix[0], title);
             strcpy(matrix[1], year);
             strcpy(matrix[2], description);
             strcpy(matrix[3], rating);
+            // matrix[3] = (void*)&rats;
             matrix[4][0] = '\0';
 
             strcpy(matrix_names[0], "title");
@@ -1284,7 +1308,6 @@ int main(int argc, char *argv[])
             matrix_names[4][0] = '\0';
 
             char *json_string = json_builder(matrix, matrix_names);
-            // POST /api/v1/tema/library/movies
 
             if (json_string == NULL) {
                 fprintf(stderr, "Error: Failed to create JSON payload for add_movie.\n");
@@ -1294,11 +1317,17 @@ int main(int argc, char *argv[])
                 json_free_serialized_string(json_string);
             }
 
-            char *msgrecv = receive_from_server(sockfd);
-            if (strstr(msgrecv, "User already exists"))
-                printf("ERROR: user already exists\n");
-            printf("%s\n", message);
-            printf("%s\n", msgrecv);
+            msgrecv = receive_from_server(sockfd);
+            if (strstr(msgrecv, "Movie already exists")) {
+                printf("ERROR: movie already exists\n");
+            } else if (strstr(msgrecv, "400 BAD REQUEST")) {
+                printf("ERROR: date add_movie incomplete\n");
+            } else {
+                printf("SUCCES: movie added with success\n");
+            }
+
+            print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
             
 
         } else
@@ -1310,34 +1339,27 @@ int main(int argc, char *argv[])
             */
             char *url = "/api/v1/tema/user/logout";
 
-
-            // char * message = compute_get_request(host, url, NULL,  cookies.cookies, cookies.count);
             message = compute_get_request(host, url, NULL,  cookies, MAX_COOKIES);
 
             send_to_server(sockfd, message);
-            char *msgrecv = receive_from_server(sockfd);
-            printf("%s\n", message);
-            printf("%s\n", msgrecv);
-            printf("SUCCESS: Utilizator delogat\n");
+            msgrecv = receive_from_server(sockfd);
 
-            char * ptr = strstr(msgrecv, "Set-Cookie:");
-            if (ptr != NULL) {
-                strcpy(session_cookies, ptr + 4);
-                char *ptr2 = strchr(session_cookies,';');
-                *ptr2 = '\0';
-                strcpy(cookies[0], session_cookies);
-            }
             if (strstr(msgrecv, "User logged out successfully") != NULL) {
                 printf("SUCCES: User logged out successfully\n");
             } else {
                 printf("ERROR: couldn't log out the user\n");
             }
+
+            print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
+
         }
 
 
     
         free(response);
         free(message);
+        free(msgrecv);
         buffer_destroy(&buff);
 
     }

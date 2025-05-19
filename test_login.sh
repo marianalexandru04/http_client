@@ -54,8 +54,11 @@
     echo "test"
     echo "2000"
     echo "test"
-    echo "6"
+    echo "6.6"
 
+    #test get_movie
+    echo "get_movie"
+    echo "75707"
 
     # exit
     echo "exit"
