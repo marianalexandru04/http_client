@@ -732,10 +732,17 @@ char *json_builder(char data[][500], char names[][50]) {
 
     int i = 0;
     while (data[i][0] != '\0') {
-        // if(strcmp(names[i], "year") == 0 || strcmp(names[i], "rating") == 0) {
-        // if(strcmp(names[i], "year") == 0) {
-        // double nr = strtod(data[i], NULL);
-        if(strstr(names[i], "year") != NULL) {
+        if (strstr(names[i], "num_movies???") != NULL) {
+            // int cnt;
+            // char *token = strtok(data[i], " ");
+            // sscanf(token, "%d", &cnt);
+            // for (size_t j = 0; j < cnt; j++) {
+            //     int id;
+            //     token = strtok(NULL, " ");
+            //     sscanf(token, "%d", &id);
+            //     json_set_number(movie, )
+            // }
+        } else if(strstr(names[i], "year") != NULL) {
 
             int year;
             sscanf(data[i], "%d", &year);
@@ -1571,6 +1578,240 @@ int main(int argc, char *argv[])
 
             json_value_free(root_value);
 
+
+        } else
+        // --------------------- get_collection  ---------------------
+        if (strcmp(buff.data, "get_collection\n") == 0) {
+            /*
+                Ruta de acces:
+
+                GET /api/v1/tema/library/collections/:collectionId
+                Observații:
+                🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
+
+                e.g: /api/v1/tema/library/collections/123
+
+                Răspuns:
+
+                {
+                "id": Number,
+                "title": String,
+                "owner": String,
+                "movies": [
+                    {
+                    "id": Number,
+                    "title": String
+                    }
+                ]
+                }
+
+                Input
+                get_collection
+                id=10
+                Output
+                SUCCESS: Detalii colecție
+                title: Favorite Movies
+                owner: test_user
+                #3: Inception
+                #5: Interstellar
+            */
+            char *url = "/api/v1/tema/library/collections/";
+            printf("id=\n");
+            char id[10];
+            fgets(id, sizeof(id), stdin);
+            replace_char(id, '\n', '\0');
+
+            message = compute_get_request(host, url, id, cookies, MAX_COOKIES);
+
+            send_to_server(sockfd, message);
+            msgrecv = receive_from_server(sockfd);
+
+
+
+            if (strstr(msgrecv, "\"id\"") != NULL) {
+                // {"description":"test","id":75707,"rating":"6.0","title":"test","user_id":27291,"year":2000}
+            /*
+                    [
+                    {
+                        "id": Number,
+                        "title": String,
+                        "owner": String,
+                        "movies": [
+                        {
+                            "id": Number,
+                            "title": String
+                        }
+                        ]
+                    }
+                    ]
+                    */
+                char *content_ptr = strstr(msgrecv, "{\"id");
+                JSON_Value *root_value = json_parse_string(content_ptr);
+                JSON_Object *root_object = json_value_get_object(root_value);
+
+
+                const char *owner = json_object_get_string(root_object, "owner");
+                const char *title = json_object_get_string(root_object, "title");
+                printf("SUCCESS: Detalii colecție\n"
+                        "title: %s\n"
+                        "owner: %s\n",
+                        title, owner);
+
+                JSON_Array *movies = json_object_get_array(root_object, "movies");
+                int elems = json_array_get_count(movies);
+                for (size_t i = 0; i < elems; i++) {
+                    JSON_Object *movie = json_array_get_object(movies, i);
+                    const char *movie_title = json_object_get_string(movie, "title");
+                    int id = (int)json_object_get_number(movie, "id");
+                    printf("#%d: %s\n", id, movie_title);
+                }
+
+                json_value_free(root_value);
+
+            } else if (strstr(msgrecv, "Collection not found") != NULL) {
+                 printf("ERROR: Collection not found, invalid id\n");
+            } else {
+                printf("ERROR: serverul zice ca nu am acces la Collections\n");
+            }
+
+            // print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
+
+        } else 
+        // -------------------- add_collection ----------------------
+        if (strcmp(buff.data, "add_collection\n") == 0) {
+            /*
+            POST /api/v1/tema/library/collections
+            Tip payload:
+
+            application/json
+            Payload:
+
+            {
+            "title": String
+            }
+            Observații:
+            🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
+            ❗ Owner este utilizatorul curent.
+
+            Erori tratate:
+            👎 Fără acces library.
+            👎 Date invalide/incomplete.
+
+            Input
+            add_collection
+            title=Must See
+            num_movies=2
+            movie_id[0]=1
+            movie_id[1]=3
+            Output
+            SUCCESS: Colecție adăugată
+
+            */
+            char *url = "/api/v1/tema/library/collections";
+            printf("title=\n");
+            char title[50];
+            fgets(title, sizeof(title), stdin);
+            replace_char(title, '\n', '\0');
+
+            printf("num_movies=\n");
+            char nm[10];
+            fgets(nm, sizeof(nm), stdin);
+            replace_char(nm, '\n', '\0');
+            int num_movies;
+            sscanf(nm, "%d", &num_movies);
+
+            char id[10];
+            char movie_ids[200];
+            sprintf(movie_ids, "%s ", nm);
+            movie_ids[0] = '\0';
+            for (size_t i = 0; i < num_movies; i++) {
+                memset(id, 0, sizeof(id));
+                printf("movie_id[%ld]=\n", i);
+                fgets(id, sizeof(id), stdin);
+                replace_char(id, '\n', '\0');
+                strcat(movie_ids, id);
+                strcat(movie_ids, " ");
+            }
+
+            zero_matrix(matrix, matrix_names);
+
+            strcpy(matrix[0], title);
+            strcpy(matrix[1], movie_ids);
+            matrix[2][0] = '\0';
+
+            strcpy(matrix_names[0], "title");
+            strcpy(matrix_names[1], "num_movies");
+            matrix_names[2][0] = '\0';
+
+            // char *json_string = json_builder(matrix, matrix_names);
+            char json_string[100];
+            sprintf(json_string, "{\"title\":\"%s\"}", title);
+
+            if (json_string == NULL) {
+                fprintf(stderr, "Error: Failed to create JSON payload for add_collection.\n");
+            } else {
+                message = compute_post_request(host, url, "application/json",  json_string, cookies, MAX_COOKIES);
+                send_to_server(sockfd, message);
+                // json_free_serialized_string(json_string);
+            }
+
+            msgrecv = receive_from_server(sockfd);
+            if (strstr(msgrecv, "Collection already exists")) {
+                printf("ERROR: Collection already exists\n");
+            } else if (strstr(msgrecv, "400 BAD REQUEST")) {
+                printf("ERROR: datele add_collection sunt incomplete\n");
+            } else {
+                printf("SUCCESS: Colecție adăugată\n");
+            }
+
+            print_messages(message, msgrecv);
+            add_cookie(cookies, session_cookies, msgrecv);
+            
+
+        } else 
+        // --------------------- delete_collection ---------------------
+        if (strcmp(buff.data, "delete_collection\n") == 0) {
+            /*
+                DELETE /api/v1/tema/library/collections/:collectionId
+                Observații:
+                🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
+                ❗ Trebuie să fiți owner.
+
+                Erori tratate:
+                👎 Fără acces library.
+                👎 Nu sunteți owner.
+                👎 ID invalid.
+
+                Input
+                    delete_collection
+                    id=10
+                    Output
+                        SUCCESS: Colecție ștearsă
+            */
+            printf("id=\n");
+            char id[50];
+            fgets(id, sizeof(id), stdin);
+            replace_char(id, '\n', '\0');
+
+            char url[100];
+            snprintf(url, sizeof(url), "/api/v1/tema/library/collections/%s", id);
+
+            message = compute_delete_request(host, url, cookies, MAX_COOKIES);
+
+            send_to_server(sockfd, message);
+            msgrecv = receive_from_server(sockfd);
+            if (strstr(msgrecv, "200 OK") != NULL) {
+                printf("SUCCESS: Colecție ștearsă\n");
+            } else if (strstr(msgrecv, "UNAUTHORIZED") != NULL) {
+                printf("ERROR: nu sunt permisiuni\n");
+            } else {
+                printf("ERROR: nu s-a gasit colecția\n");
+            }
+
+            print_messages(message, msgrecv);
+
+            add_cookie(cookies, session_cookies, msgrecv);
 
         }
 
