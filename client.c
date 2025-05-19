@@ -798,20 +798,37 @@ bool isUser(User **users, char* username, int * usercount) {
     }
     return false;
 }
-// void add_cookie(char  ** cookies, char * cookie) {
-//     for(int i = 0; i < MAX_COOKIES; i++) { // MAX_COOKIES is 10
-//         if(cookies[i] == NULL) {
-//             cookies[i] = malloc(strlen(cookie) + 1); // Corrected allocation size
-//             if (cookies[i] == NULL) {
-//                 perror("Failed to allocate memory for cookie");
-//                 return;
-//             }
-//             strcpy(cookies[i], cookie);
-//             return;
-//         }
-//     }
-//     fprintf(stderr, "No space to add new cookie. Cookie array full.\\n");
-// }
+void add_movie_to_collection(char *collection_id, char *movie_id,
+                                char *host, char **cookies, int sockfd)
+{
+    char url[200];
+    snprintf(url, sizeof(url), "/api/v1/tema/library/collections/%s/movies", collection_id);
+
+    char json_string[100];
+    int id2;
+    sscanf(movie_id, "%d", &id2);
+    sprintf(json_string, "{\"id\":%d}", id2);
+
+    char *message = compute_post_request(host, url, "application/json",  json_string, cookies, MAX_COOKIES);
+    send_to_server(sockfd, message);
+    char *msgrecv = receive_from_server(sockfd);
+    if (strstr(msgrecv, "already exists")) {
+        printf("ERROR: movie already added\n");
+    } else if (strstr(msgrecv, "400 BAD REQUEST")) {
+        printf("ERROR: datele introduse sunt incomplete\n");
+    } else {
+        printf("SUCCESS: Film adăugat în colecție\n");
+    }
+
+    print_messages(message, msgrecv);
+
+    //add_cookie(cookies, session_cookies, msgrecv); ???
+
+    free(message);
+    free(msgrecv);
+
+
+}
 int main(int argc, char *argv[])
 {
     char *msgrecv;
@@ -1725,36 +1742,21 @@ int main(int argc, char *argv[])
             char movie_ids[200];
             sprintf(movie_ids, "%s ", nm);
             movie_ids[0] = '\0';
-            for (size_t i = 0; i < num_movies; i++) {
-                memset(id, 0, sizeof(id));
-                printf("movie_id[%ld]=\n", i);
-                fgets(id, sizeof(id), stdin);
-                replace_char(id, '\n', '\0');
-                strcat(movie_ids, id);
-                strcat(movie_ids, " ");
-            }
+            char collection_id[20];
+            // for (size_t i = 0; i < num_movies; i++) {
+            //     memset(id, 0, sizeof(id));
+            //     printf("movie_id[%ld]=\n", i);
+            //     fgets(id, sizeof(id), stdin);
+            //     replace_char(id, '\n', '\0');
+            //     strcat(movie_ids, id);
+            //     strcat(movie_ids, " ");
+            // }
 
-            zero_matrix(matrix, matrix_names);
-
-            strcpy(matrix[0], title);
-            strcpy(matrix[1], movie_ids);
-            matrix[2][0] = '\0';
-
-            strcpy(matrix_names[0], "title");
-            strcpy(matrix_names[1], "num_movies");
-            matrix_names[2][0] = '\0';
-
-            // char *json_string = json_builder(matrix, matrix_names);
             char json_string[100];
             sprintf(json_string, "{\"title\":\"%s\"}", title);
 
-            if (json_string == NULL) {
-                fprintf(stderr, "Error: Failed to create JSON payload for add_collection.\n");
-            } else {
-                message = compute_post_request(host, url, "application/json",  json_string, cookies, MAX_COOKIES);
-                send_to_server(sockfd, message);
-                // json_free_serialized_string(json_string);
-            }
+            message = compute_post_request(host, url, "application/json",  json_string, cookies, MAX_COOKIES);
+            send_to_server(sockfd, message);
 
             msgrecv = receive_from_server(sockfd);
             if (strstr(msgrecv, "Collection already exists")) {
@@ -1763,7 +1765,22 @@ int main(int argc, char *argv[])
                 printf("ERROR: datele add_collection sunt incomplete\n");
             } else {
                 printf("SUCCESS: Colecție adăugată\n");
+                char *pin = strstr(msgrecv, "{\"id\":");
+                char *pin2 = pin + 6;
+                int j = 0;
+                while(*(pin2 + j) != ',') j++;
+                strncpy(collection_id, pin2, j);
+                collection_id[j] = '\0';
+                for (size_t k = 0; k < num_movies; k++) {
+                    memset(id, 0, sizeof(id));
+                    printf("movie_id[%ld]=\n", k);
+                    fgets(id, sizeof(id), stdin);
+                    replace_char(id, '\n', '\0');
+
+                    add_movie_to_collection(collection_id, id, host, cookies, sockfd);
+                }
             }
+
 
             print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
@@ -1812,6 +1829,104 @@ int main(int argc, char *argv[])
             print_messages(message, msgrecv);
 
             add_cookie(cookies, session_cookies, msgrecv);
+
+        } else 
+        // --------------------- delete_movie_from_collection ---------------------
+        if (strcmp(buff.data, "delete_movie_from_collection\n") == 0) {
+            /*
+                Ruta de acces:
+
+                DELETE /api/v1/tema/library/collections/:collectionId/movies/:movieId
+                e.g: /api/v1/tema/library/collections/5/movies/123
+
+                Observații:
+                🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
+                ❗Trebuie să fiți owner.
+                ❗ Filmul trebuie să existe în colecție.
+
+                Erori tratate:
+                👎 Fără acces library.
+                👎 Nu sunteți owner.
+                👎 ID invalid.
+
+                Input
+                    delete_movie_from_collection
+                    collection_id=10
+                    movie_id=3
+                    Output
+
+                    SUCCESS: Film șters din colecție
+            */
+            printf("collection_id=\n");
+            char collection_id[50];
+            fgets(collection_id, sizeof(collection_id), stdin);
+            replace_char(collection_id, '\n', '\0');
+
+            printf("movie_id=\n");
+            char id[50];
+            fgets(id, sizeof(id), stdin);
+            replace_char(id, '\n', '\0');
+
+            char url[200];
+            snprintf(url, sizeof(url), "/api/v1/tema/library/collections/%s/movies/%s", collection_id, id);
+
+            message = compute_delete_request(host, url, cookies, MAX_COOKIES);
+
+            send_to_server(sockfd, message);
+            msgrecv = receive_from_server(sockfd);
+            if (strstr(msgrecv, "200 OK") != NULL) {
+                printf("SUCCESS: Film șters din colecție\n");
+            } else if (strstr(msgrecv, "UNAUTHORIZED") != NULL) {
+                printf("ERROR: nu sunt permisiuni\n");
+            } else {
+                printf("ERROR: nu s-a gasit colecția\n");
+            }
+
+            print_messages(message, msgrecv);
+
+            add_cookie(cookies, session_cookies, msgrecv);
+
+        } else 
+        // -------------------- add_movie_to_collection ----------------------
+        if (strcmp(buff.data, "add_movie_to_collection\n") == 0) {
+            /*
+                POST /api/v1/tema/library/collections/:collectionId/movies
+                Tip payload:
+
+                {
+                "id": Number
+                }
+                Observații:
+                🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
+                ❗ Trebuie să fiți owner.
+
+                Erori tratate:
+                👎 Fără acces library.
+                👎 Nu sunteți owner.
+                👎 Date invalide/incomplete.
+
+                Input
+                add_movie_to_collection
+                collection_id=10
+                movie_id=3
+                Output
+
+                SUCCESS: Film adăugat în colecție
+
+            */
+
+
+            printf("collection_id=\n");
+            char collection_id[50];
+            fgets(collection_id, sizeof(collection_id), stdin);
+            replace_char(collection_id, '\n', '\0');
+
+            printf("movie_id=\n");
+            char movie_id[50];
+            fgets(movie_id, sizeof(movie_id), stdin);
+            replace_char(movie_id, '\n', '\0');
+
+            add_movie_to_collection(collection_id, movie_id, host, cookies, sockfd);
 
         }
 
