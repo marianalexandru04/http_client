@@ -20,19 +20,34 @@
     # echo "test_1747463334_snM3tV"
 
     # test add_user
-    echo "add_user"
-    echo "test1"
-    echo "test"
+    # echo "add_user"
+    # echo "test"
+    # echo "test"
 
     # test get_users
     echo "get_users"
 
+    # test logout_admin
+    echo "logout_admin"
+
+    
+    # test logout
+    echo "logout"
+
+
+    # test login
+    echo "login"
+    echo "marian.panait1206"
+    echo "test"
+    echo "test"
+    
 
     # test get_access
     echo "get_access"
 
     #test get_movies
     echo "get_movies"
+
 
     #add_movie
     echo "add_movie"

@@ -809,6 +809,7 @@ int main(int argc, char *argv[])
     char **cookies = calloc(10, sizeof(char*));
     cookies[0] = calloc(200, sizeof(char));
     cookies[1] = calloc(200, sizeof(char));
+    cookies[1][0] = '\0';
 
     // int usercount = 0;
     // User **users;
@@ -1045,6 +1046,14 @@ int main(int argc, char *argv[])
             printf("%s\n", message);
             printf("%s\n", msgrecv);
 
+            char * ptr = strstr(msgrecv, "Set-Cookie:");
+            if (ptr != NULL) {
+                strcpy(session_cookies, ptr + 4);
+                char *ptr2 = strchr(session_cookies,';');
+                *ptr2 = '\0';
+                strcpy(cookies[0], session_cookies);
+            }
+
 
         } else
         // --------------------- login ---------------------
@@ -1082,14 +1091,14 @@ int main(int argc, char *argv[])
 
             zero_matrix(matrix, matrix_names);
 
-            strcpy(matrix[0], username);
+            strcpy(matrix[0], admin_username);
             strcpy(matrix[1], password);
-            strcpy(matrix[2], admin_username);
+            strcpy(matrix[2], username);
             matrix[3][0] = '\0';
 
-            strcpy(matrix_names[0], "username");
+            strcpy(matrix_names[0], "admin_username");
             strcpy(matrix_names[1], "password");
-            strcpy(matrix_names[2], "admin_username");
+            strcpy(matrix_names[2], "username");
             matrix_names[3][0] = '\0';
 
             char *json_string = json_builder(matrix, matrix_names);
@@ -1100,12 +1109,21 @@ int main(int argc, char *argv[])
                 // json_free_serialized_string(json_string); // compute_post_request likely uses it, free after send
                 // json_value_free(myroot); // Removed
                 send_to_server(sockfd, message);
-                free(message); // Assuming compute_post_request allocates message
+                // free(message); // Assuming compute_post_request allocates message
                 json_free_serialized_string(json_string); // Free json_string here
             }
             char *msgrecv = receive_from_server(sockfd);
             printf("%s\n", message);
             printf("%s\n", msgrecv);
+
+            char * ptr = strstr(msgrecv, "Set-Cookie:");
+            if (ptr != NULL) {
+                strcpy(session_cookies, ptr + 4);
+                char *ptr2 = strchr(session_cookies,';');
+                *ptr2 = '\0';
+                strcpy(cookies[0], session_cookies);
+            }
+
 
 
         } else
@@ -1178,11 +1196,11 @@ int main(int argc, char *argv[])
 
                 printf("#%d %s\n", id, title);
             }
-            char * ptr = strstr(msgrecv, "Set-Cookie:");
-            strcpy(session_cookies, ptr + 4);
-            char *ptr2 = strchr(session_cookies,';');
-            *ptr2 = '\0';
-            strcpy(cookies[0], session_cookies);
+            // char * ptr = strstr(msgrecv, "Set-Cookie:");
+            // strcpy(session_cookies, ptr + 4);
+            // char *ptr2 = strchr(session_cookies,';');
+            // *ptr2 = '\0';
+            // strcpy(cookies[0], session_cookies);
 
             json_value_free(root_value);
 
@@ -1281,6 +1299,33 @@ int main(int argc, char *argv[])
             printf("%s\n", msgrecv);
             
 
+        } else
+        // --------------------- logout ---------------------
+        if (strcmp(buff.data, "logout\n") == 0) {
+            /*
+                GET /api/v1/tema/user/logout
+
+            */
+            char *url = "/api/v1/tema/user/logout";
+
+
+            // char * message = compute_get_request(host, url, NULL,  cookies.cookies, cookies.count);
+            message = compute_get_request(host, url, NULL,  cookies, MAX_COOKIES);
+
+            send_to_server(sockfd, message);
+            char *msgrecv = receive_from_server(sockfd);
+            printf("%s\n", message);
+            printf("%s\n", msgrecv);
+            printf("SUCCESS: Utilizator delogat\n");
+
+            char * ptr = strstr(msgrecv, "Set-Cookie:");
+            if (ptr != NULL) {
+                strcpy(session_cookies, ptr + 4);
+                char *ptr2 = strchr(session_cookies,';');
+                *ptr2 = '\0';
+                strcpy(cookies[0], session_cookies);
+            }
+            
         }
 
 
