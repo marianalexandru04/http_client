@@ -24,10 +24,10 @@ typedef struct {
 } User;
 
 void print_messages(char *msg1, char *msg2) {
-    // if (msg1 != NULL)
-    //     printf("%s\n", msg1);
-    // if (msg2 != NULL)
-    //     printf("%s\n", msg2);
+    if (msg1 != NULL)
+        printf("%s\n", msg1);
+    if (msg2 != NULL)
+        printf("%s\n", msg2);
 }
 void add_cookie(char **cookies, char *s_cookie, char *msgrecv) {
     char * ptr = strstr(msgrecv, "Set-Cookie:");
@@ -100,14 +100,14 @@ char* replace_char(char* str, char find, int replace){
     }
     return str;
 }
-void add_user_and_password(User **users, char* username, char* password, int * usercount) {
-    users[*usercount]->name = malloc(sizeof(char) * strlen(username));
-    users[*usercount]->password = malloc(sizeof(char) * strlen(password));
-    strcpy(users[*usercount]->name, username);
-    strcpy(users[*usercount]->password, password);
-    (*usercount) ++;
+// void add_user_and_password(User **users, char* username, char* password, int * usercount) {
+//     users[*usercount]->name = malloc(sizeof(char) * strlen(username));
+//     users[*usercount]->password = malloc(sizeof(char) * strlen(password));
+//     strcpy(users[*usercount]->name, username);
+//     strcpy(users[*usercount]->password, password);
+//     (*usercount) ++;
 
-}
+// }
 bool isUser(User **users, char* username, int * usercount) {
     for(size_t i = 0; i < (*usercount); i++) {
         if(strcmp(username, users[i]->name) == 0)
@@ -133,6 +133,8 @@ void add_movie_to_collection(char *collection_id, char *movie_id,
         printf("ERROR: movie already added\n");
     } else if (strstr(msgrecv, "400 BAD REQUEST")) {
         printf("ERROR: datele introduse sunt incomplete\n");
+    } else if (strstr(msgrecv, "404 NOT FOUND")) {
+        printf("ERROR: invalid id\n");
     } else {
         printf("SUCCESS: Film adăugat în colecție\n");
     }
@@ -353,6 +355,9 @@ int main(int argc, char *argv[])
 
             if (strstr(msgrecv, "200 OK") != NULL) {
                 printf("SUCCESS: Utilizator șters\n");
+            }else if (strstr(msgrecv, "400 Bad Request") != NULL) {
+                printf("ERROR: user invalid\n");
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
             } else {
                 printf("ERROR: nu exista utilizatorul\n");
             }
@@ -1260,6 +1265,9 @@ int main(int argc, char *argv[])
         buffer_destroy(&buff);
 
     }
+    free(cookies[0]);
+    free(cookies[1]);
+    free(cookies);
 
     close_connection(sockfd);
     return 0;

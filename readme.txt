@@ -3,7 +3,7 @@ python3 checker.py --admin 'myadminuser:hunter2' ../path-to/client
 source .venv/bin/activate
 python3 checker.py -d -a 'marian.panait1206:766d189849e0' ./sources/client
 
-
+python3 checker.py --script CLEANUP -d -a 'marian.panait1206:766d189849e0' ./sources/client
 
 \username=password=POST /api/v1/tema/admin/login HTTP/1.1
 Host: 63.32.125.183:8081
