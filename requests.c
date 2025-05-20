@@ -138,7 +138,7 @@ char *compute_get_request(char *host, char *url, char *query_params,
     //     }
     //     compute_message(message, line);
     // }
-    if (cookies[0] != NULL) {
+    if (cookies[0][0] != '\0') {
         sprintf(line, "%s", cookies[0]);
         compute_message(message, line);
     }
@@ -196,7 +196,7 @@ char *compute_post_request(char *host, char *url, char* content_type, char *body
     // }
     // compute_message(message, line);
     // }
-    if (cookies[0] != NULL) {
+    if (cookies[0][0] != '\0') {
         sprintf(line, "%s", cookies[0]);
         compute_message(message, line);
     }
@@ -241,7 +241,7 @@ char *compute_delete_request(char *host, char *url,
     //     }
     //     compute_message(message, line);
     // }
-    if (cookies[0] != NULL) {
+    if (cookies[0][0] != '\0') {
         sprintf(line, "%s", cookies[0]);
         compute_message(message, line);
     }
@@ -279,7 +279,7 @@ char * compute_put_request(char *host, char *url, char **cookies,
     sprintf(line, "Content-Length: %d", len);
     compute_message(message, line);
 
-    if (cookies[0] != NULL) {
+    if (cookies[0][0] != '\0') {
         sprintf(line, "%s", cookies[0]);
         compute_message(message, line);
     }
@@ -294,7 +294,7 @@ char * compute_put_request(char *host, char *url, char **cookies,
     compute_message(message, content);
 
     // maybe free(content);  ??
-    
+
     free(line);
 
     return message;

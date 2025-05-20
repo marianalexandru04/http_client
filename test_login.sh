@@ -19,10 +19,10 @@
     # echo "delete_user"
     # echo "test_1747463334_snM3tV"
 
-    # test add_user
-    # echo "add_user"
-    # echo "test"
-    # echo "test"
+    test add_user
+    echo "add_user"
+    echo "test"
+    echo "test"
 
     # test get_users
     echo "get_users"
@@ -55,6 +55,22 @@
     echo "2000"
     echo "test"
     echo "6.6"
+  
+    echo "add_movie"
+    echo "Rezolvare Tema 3 PCom"
+    echo "2025"
+    echo "Git Gud!"
+    echo "12.99"
+
+    # test update_movie
+    echo "update_movie"
+    echo "99999999"
+    echo "Snow White"
+    echo "2025"
+    echo "Mickey Mouse has you at gunpoint."
+    echo "1.6"
+
+   
 
     #test get_movie
     echo "get_movie"
