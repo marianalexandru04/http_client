@@ -1,10 +1,10 @@
-#include <stdio.h>      /* printf, sprintf */
-#include <stdlib.h>     /* exit, atoi, malloc, free */
-#include <unistd.h>     /* read, write, close */
-#include <string.h>     /* memcpy, memset */
-#include <sys/socket.h> /* socket, connect */
-#include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
-#include <netdb.h>      /* struct hostent, gethostbyname */
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
 #include <arpa/inet.h>
 #include "helpers.h"
 #include "requests.h"
@@ -23,11 +23,11 @@ typedef struct {
     char *password;
 } User;
 
-void print_messages(char *msg1, char *msg2) {
-    if (msg1 != NULL)
-        printf("%s\n", msg1);
-    if (msg2 != NULL)
-        printf("%s\n", msg2);
+void print_messages(char *msg1, char *msg2) { // commented, used for debugging
+    // if (msg1 != NULL)
+    //     printf("%s\n", msg1);
+    // if (msg2 != NULL)
+    //     printf("%s\n", msg2);
 }
 void add_cookie(char **cookies, char *s_cookie, char *msgrecv) {
     char * ptr = strstr(msgrecv, "Set-Cookie:");
@@ -42,25 +42,14 @@ void add_cookie(char **cookies, char *s_cookie, char *msgrecv) {
 char *json_builder(char data[][500], char names[][50]) {
     JSON_Value *root_value = json_value_init_object();
     if (root_value == NULL) {
-        fprintf(stderr, "Error: json_value_init_object failed in json_builder\n");
+        printf("Error in json_builder\n");
         return NULL;
     }
     JSON_Object *root_object = json_value_get_object(root_value);
 
     int i = 0;
     while (data[i][0] != '\0') {
-        if (strstr(names[i], "num_movies???") != NULL) {
-            // int cnt;
-            // char *token = strtok(data[i], " ");
-            // sscanf(token, "%d", &cnt);
-            // for (size_t j = 0; j < cnt; j++) {
-            //     int id;
-            //     token = strtok(NULL, " ");
-            //     sscanf(token, "%d", &id);
-            //     json_set_number(movie, )
-            // }
-        } else if(strstr(names[i], "year") != NULL) {
-
+        if(strstr(names[i], "year") != NULL) {
             int year;
             sscanf(data[i], "%d", &year);
             json_object_set_number(root_object, names[i], year);
@@ -80,10 +69,10 @@ char *json_builder(char data[][500], char names[][50]) {
 }
 
 
-void zero_matrix(char types[][500], char names[][50]) {
+void zero_matrix(char data[][500], char names[][50]) {
     int i = 0;
-    while (types[i][0] != '\0') {
-        memset(types[i], 0, 50);
+    while (data[i][0] != '\0') {
+        memset(data[i], 0, 50);
         i++;
     }
     int j = 0;
@@ -99,21 +88,6 @@ char* replace_char(char* str, char find, int replace){
         current_pos = strchr(current_pos,find);
     }
     return str;
-}
-// void add_user_and_password(User **users, char* username, char* password, int * usercount) {
-//     users[*usercount]->name = malloc(sizeof(char) * strlen(username));
-//     users[*usercount]->password = malloc(sizeof(char) * strlen(password));
-//     strcpy(users[*usercount]->name, username);
-//     strcpy(users[*usercount]->password, password);
-//     (*usercount) ++;
-
-// }
-bool isUser(User **users, char* username, int * usercount) {
-    for(size_t i = 0; i < (*usercount); i++) {
-        if(strcmp(username, users[i]->name) == 0)
-            return true;
-    }
-    return false;
 }
 void add_movie_to_collection(char *collection_id, char *movie_id,
                                 char *host, char **cookies, int sockfd)
@@ -135,13 +109,15 @@ void add_movie_to_collection(char *collection_id, char *movie_id,
         printf("ERROR: datele introduse sunt incomplete\n");
     } else if (strstr(msgrecv, "404 NOT FOUND")) {
         printf("ERROR: invalid id\n");
+    } else if (strstr(msgrecv, "FORBIDDEN") != NULL) {
+        printf("ERROR: must be owner\n");
     } else {
         printf("SUCCESS: Film adăugat în colecție\n");
     }
-
+    if(strstr(msgrecv, "Connection: close")) {
+        sockfd = open_connection("63.32.125.183", 8081, AF_INET, SOCK_STREAM, 0);
+    }
     print_messages(message, msgrecv);
-
-    //add_cookie(cookies, session_cookies, msgrecv); ???
 
     free(message);
     free(msgrecv);
@@ -161,19 +137,11 @@ int main(int argc, char *argv[])
 {
     int sockfd;
 
-    // Cookies cookies;
-    // cookies.count = 0;
     char **cookies = calloc(10, sizeof(char*));
     cookies[0] = calloc(200, sizeof(char));
     cookies[1] = calloc(200, sizeof(char));
     cookies[1][0] = '\0';
     cookies[0][0] = '\0';
-
-
-    // int usercount = 0;
-    // User **users;
-    // users = malloc(sizeof(User*) * 50);
-    
 
     setvbuf(stdout, NULL, _IONBF, 0);
 
@@ -184,14 +152,10 @@ int main(int argc, char *argv[])
 
     char session_cookies[200];
     
-    
     char matrix[6][500];
     matrix[0][0] = '\0';
     char matrix_names[6][50];
-    matrix_names[0][0] = '\0';
-
-    int ok = 0;
-    
+    matrix_names[0][0] = '\0';    
 
     char stdincmd[1000];
     while (1) {
@@ -238,8 +202,13 @@ int main(int argc, char *argv[])
             print_messages(message, msgrecv);
             if (strstr(msgrecv, "Admin logged in successfully")) {
                 printf("SUCCESS: Admin autentificat cu succes\n");
+            } else if (strstr(msgrecv, "invalid credentials")) {
+                printf("ERROR: date de autentificare incorecte\n");
             } else {
                 printf("ERROR: admin already logged in\n");
+            }
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
             }
             
             add_cookie(cookies, session_cookies, msgrecv);
@@ -286,13 +255,15 @@ int main(int argc, char *argv[])
             if (strstr(msgrecv, "User already exists")) {
                 printf("ERROR: user already exists\n");
             } else if (strstr(msgrecv, "Username or password should not contain spaces")) {
-                printf("Username or password should not contain spaces\n");
+                printf("ERROR: Username or password should not contain spaces\n");
             } else if (strstr(msgrecv, "error")) {
-                printf("ERROR: unknown error\n");
+                printf("ERROR: nu sunt permisiuni de admin\n");
             } else {
                 printf("SUCCES: user added\n");
             }
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
 
@@ -327,8 +298,10 @@ int main(int argc, char *argv[])
                 }
             }
             else 
-                printf("ERROR: nu s-a putut accesa lista cu utilizatori\n");
-
+                printf("ERROR: nu sunt permisiuni de admin\n");
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
 
             print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
@@ -337,8 +310,7 @@ int main(int argc, char *argv[])
         // --------------------- delete_user ---------------------
         if (strcmp(buff.data, "delete_user\n") == 0) {
             /*
-                char * host_ip = "63.32.125.183";
-                int portno = 8081;
+                DELETE /api/v1/tema/admin/users/:username
             */
             printf("username=\n");
             char username[50];
@@ -357,12 +329,13 @@ int main(int argc, char *argv[])
                 printf("SUCCESS: Utilizator șters\n");
             }else if (strstr(msgrecv, "400 Bad Request") != NULL) {
                 printf("ERROR: user invalid\n");
-                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
             } else {
-                printf("ERROR: nu exista utilizatorul\n");
+                printf("ERROR: nu sunt permisiuni de admin\n");
             }
             print_messages(message, msgrecv);
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             add_cookie(cookies, session_cookies, msgrecv);
 
         } else
@@ -372,9 +345,6 @@ int main(int argc, char *argv[])
                 GET /api/v1/tema/admin/logout
             */
             char *url = "/api/v1/tema/admin/logout";
-
-
-            // char * message = compute_get_request(host, url, NULL,  cookies.cookies, cookies.count);
             message = compute_get_request(host, url, NULL,  cookies, MAX_COOKIES);
 
             send_to_server(sockfd, message);
@@ -386,26 +356,17 @@ int main(int argc, char *argv[])
             if (strstr(msgrecv, "Admin logged out successfully") != NULL) {
                 printf("SUCCES: Admin logged out successfully\n");
             } else {
-                printf("ERROR: couldn't log out the admin\n");
+                printf("ERROR: couldn't log out the admin, already logged out\n");
             }
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
 
         } else
         // --------------------- login ---------------------
         if (strcmp(buff.data, "login\n") == 0) {
             /*
                 POST /api/v1/tema/user/login
-                Tip payload:
-
-                application/json
-                Payload:
-
-                {
-                "admin_username": String,
-                "username": String,
-                "password": String
-                }
-
             */
             char *url = "/api/v1/tema/user/login";
 
@@ -437,13 +398,11 @@ int main(int argc, char *argv[])
             matrix_names[3][0] = '\0';
 
             char *json_string = json_builder(matrix, matrix_names);
-            if (json_string == NULL) {
-                fprintf(stderr, "Error: Failed to create JSON payload for user login.\n");
-            } else {
-                message = compute_post_request(host, url, "application/json",  json_string, cookies, MAX_COOKIES);
-                send_to_server(sockfd, message);
-                json_free_serialized_string(json_string);
-            }
+
+            message = compute_post_request(host, url, "application/json",  json_string, cookies, MAX_COOKIES);
+            send_to_server(sockfd, message);
+            json_free_serialized_string(json_string);
+
             msgrecv = receive_from_server(sockfd);
 
             print_messages(message, msgrecv);
@@ -454,23 +413,24 @@ int main(int argc, char *argv[])
 
             if (strstr(msgrecv, "User logged in successfully") != NULL) {
                 printf("SUCCES: User logged in successfully\n");
+            } else if (strstr(msgrecv, "invalid credentials") != NULL) {
+                printf("ERROR: invalid credentials\n");
             } else {
                 printf("ERROR: couldn't log in the user\n");
             }
 
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
 
         } else
         // --------------------- get_access  ---------------------
         if (strcmp(buff.data, "get_access\n") == 0) {
             /*
                 GET /api/v1/tema/library/access
-                SUCCESS: Token JWT primit
-
             */
             char *url = "/api/v1/tema/library/access";
 
-            // char * message = compute_get_request(host, url, NULL,  cookies.cookies, cookies.count);
             message = compute_get_request(host, url, NULL,  cookies, MAX_COOKIES);
 
             send_to_server(sockfd, message);
@@ -486,26 +446,21 @@ int main(int argc, char *argv[])
             if (ptr != NULL) {
                 printf("SUCCESS: Token JWT primit\n");
             } else {
-                printf("ERROR: token-ul jwt nu a fost primit\n");
+                printf("ERROR: neautentificat\n");
             }
             print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
 
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
         } else
         // --------------------- get_movies  ---------------------
         if (strcmp(buff.data, "get_movies\n") == 0) {
             /*
                 GET /api/v1/tema/library/movies
-                SUCCESS: Token JWT primit
-
             */
             char *url = "/api/v1/tema/library/movies";
-
-            // sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
-
-            
-            // char * message = compute_get_request(host, url, NULL,  cookies.cookies, cookies.count);
             message = compute_get_request(host, url, NULL,  cookies, MAX_COOKIES);
 
             send_to_server(sockfd, message);
@@ -528,9 +483,11 @@ int main(int argc, char *argv[])
                     printf("#%d %s\n", id, title);
                 }
             } else {
-                printf("ERROR: serverul nu a intors lista cu filme\n");
+                printf("ERROR: not allowed\n");
             }
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
 
             print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
@@ -543,20 +500,6 @@ int main(int argc, char *argv[])
         if (strcmp(buff.data, "get_movie\n") == 0) {
             /*
                 GET /api/v1/tema/library/movies/:movieId
-                {
-                    "id": Number,
-                    "title": String,
-                    "year": Number,
-                    "description": String,
-                    "rating": Number
-                }
-
-
-                SUCCESS: Detalii film
-                title: The Dark Knight
-                year: 2010
-                description: sci-fi
-                rating: 8.8
             */
             char *url = "/api/v1/tema/library/movies/";
             printf("id=\n");
@@ -595,9 +538,11 @@ int main(int argc, char *argv[])
             } else if (strstr(msgrecv, "Movie not found") != NULL) {
                  printf("ERROR: Movie not found, invalid id\n");
             } else {
-                printf("ERROR: serverul zice ca nu am acces la filme\n");
+                printf("ERROR: not allowed\n");
             }
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             // print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
 
@@ -634,7 +579,6 @@ int main(int argc, char *argv[])
             strcpy(matrix[1], year);
             strcpy(matrix[2], description);
             strcpy(matrix[3], rating);
-            // matrix[3] = (void*)&rats;
             matrix[4][0] = '\0';
 
             strcpy(matrix_names[0], "title");
@@ -645,13 +589,11 @@ int main(int argc, char *argv[])
 
             char *json_string = json_builder(matrix, matrix_names);
 
-            if (json_string == NULL) {
-                fprintf(stderr, "Error: Failed to create JSON payload for add_movie.\n");
-            } else {
-                message = compute_post_request(host, url, "application/json",  json_string, cookies, MAX_COOKIES);
-                send_to_server(sockfd, message);
-                json_free_serialized_string(json_string);
-            }
+
+            message = compute_post_request(host, url, "application/json",  json_string, cookies, MAX_COOKIES);
+            send_to_server(sockfd, message);
+            json_free_serialized_string(json_string);
+
 
             msgrecv = receive_from_server(sockfd);
             if (rat > 10.0 || rat < 0.0) {
@@ -663,11 +605,13 @@ int main(int argc, char *argv[])
             } else if (strstr(msgrecv, "400 BAD REQUEST")) {
                 printf("ERROR: date add_movie incomplete\n");
             } else if (strstr(msgrecv, "error")) {
-                printf("ERROR: unknown error\n");
+                printf("ERROR: not allowed\n");
             } else {
                 printf("SUCCES: movie added with success\n");
             }
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
             
@@ -689,9 +633,11 @@ int main(int argc, char *argv[])
             if (strstr(msgrecv, "User logged out successfully") != NULL) {
                 printf("SUCCES: User logged out successfully\n");
             } else {
-                printf("ERROR: couldn't log out the user\n");
+                printf("ERROR: neatentificat\n");
             }
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
 
@@ -700,48 +646,7 @@ int main(int argc, char *argv[])
         if (strcmp(buff.data, "update_movie\n") == 0) {
 
             /*
-                update_movie
-
-                id=2
-                title=New Title
-                year=2009
-                description=sci-fi
-                rating=10.0
-
-                Input
-                update_movie
-                id=2
-                title=New Title
-                year=2009
-                description=sci-fi
-                rating=10.0
-                Output
-
-                SUCCESS: Film actualizat
-                            
-                Ruta de acces:
-
                 PUT /api/v1/tema/library/movies/:movieId
-                Tip payload:
-
-                application/json
-                Payload:
-
-                {
-                    "title": String,
-                    "year": Number,
-                    "description": String,
-                    "rating": Number
-                }
-                Observații:
-                🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
-
-                Erori tratate:
-                👎 Fără acces library.
-                👎 ID invalid.
-                👎 Date invalide/incomplete.
-            
-            
             */
             printf("id=\n");
             char id[50];
@@ -790,13 +695,11 @@ int main(int argc, char *argv[])
 
             char *json_string = json_builder(matrix, matrix_names);
 
-            if (json_string == NULL) {
-                fprintf(stderr, "Error: Failed to create JSON payload.\n");
-            } else {
-                message = compute_put_request(host, url, cookies, MAX_COOKIES, json_string);
-                send_to_server(sockfd, message);
-                json_free_serialized_string(json_string);
-            }
+
+            message = compute_put_request(host, url, cookies, MAX_COOKIES, json_string);
+            send_to_server(sockfd, message);
+            json_free_serialized_string(json_string);
+
 
             msgrecv = receive_from_server(sockfd);
 
@@ -805,8 +708,8 @@ int main(int argc, char *argv[])
                 continue;
             }
 
-            if (strstr(msgrecv, "Movie already exists")) {
-                printf("ERROR: movie already exists\n");
+            if (strstr(msgrecv, "UNAUTHORIZED")) {
+                printf("ERROR: not allowed\n");
             } else if (strstr(msgrecv, "400 BAD REQUEST")) {
                 printf("ERROR: date update_movie incomplete\n");
             }  else if (strstr(msgrecv, "error")) {
@@ -814,7 +717,9 @@ int main(int argc, char *argv[])
             } else {
                 printf("SUCCES: movie updated with success\n");
             }
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
             
@@ -824,17 +729,6 @@ int main(int argc, char *argv[])
         if (strcmp(buff.data, "delete_movie\n") == 0) {
             /*
                 DELETE /api/v1/tema/library/movies/:movieId
-
-                Input
-                delete_movie
-                id=10
-                Output
-
-                SUCCESS: Film șters cu succes
-
-                Erori tratate:
-                👎 Fără acces library.
-                👎 ID invalid.
             */
             printf("id=\n");
             char id[50];
@@ -851,11 +745,13 @@ int main(int argc, char *argv[])
             if (strstr(msgrecv, "200 OK") != NULL) {
                 printf("SUCCESS: Film șters\n");
             } else if (strstr(msgrecv, "UNAUTHORIZED") != NULL) {
-                printf("ERROR: nu sunt permisiuni\n");
+                printf("ERROR: not allowed\n");
             } else {
-                printf("ERROR: nu s-a gasit filmul\n");
+                printf("ERROR: id invalid\n");
             }
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             print_messages(message, msgrecv);
 
             add_cookie(cookies, session_cookies, msgrecv);
@@ -865,27 +761,6 @@ int main(int argc, char *argv[])
         if (strcmp(buff.data, "get_collections\n") == 0) {
             /*
                 GET /api/v1/tema/library/collections
-                    Răspuns:
-
-                    [
-                    {
-                        "id": Number,
-                        "title": String,
-                        "owner": String,
-                        "movies": [
-                        {
-                            "id": Number,
-                            "title": String
-                        }
-                        ]
-                    }
-                    ]
-
-                Output
-                    SUCCESS: Lista colecțiilor
-                    #1: Colectie A
-                    #2: Colectie B
-
             */
             char *url = "/api/v1/tema/library/collections";
 
@@ -910,11 +785,15 @@ int main(int argc, char *argv[])
 
                     printf("#%d %s\n", id, title);
                 }
+            } else if (strstr(msgrecv, "UNAUTHORIZED") != NULL) {
+                printf("ERROR: not allowed\n");
             } else {
-                printf("ERROR: serverul nu a intors lista colecțiilor\n");
+                printf("ERROR: id invalid\n");
             }
 
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
 
@@ -925,37 +804,7 @@ int main(int argc, char *argv[])
         // --------------------- get_collection  ---------------------
         if (strcmp(buff.data, "get_collection\n") == 0) {
             /*
-                Ruta de acces:
-
                 GET /api/v1/tema/library/collections/:collectionId
-                Observații:
-                🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
-
-                e.g: /api/v1/tema/library/collections/123
-
-                Răspuns:
-
-                {
-                "id": Number,
-                "title": String,
-                "owner": String,
-                "movies": [
-                    {
-                    "id": Number,
-                    "title": String
-                    }
-                ]
-                }
-
-                Input
-                get_collection
-                id=10
-                Output
-                SUCCESS: Detalii colecție
-                title: Favorite Movies
-                owner: test_user
-                #3: Inception
-                #5: Interstellar
             */
             char *url = "/api/v1/tema/library/collections/";
             printf("id=\n");
@@ -969,24 +818,7 @@ int main(int argc, char *argv[])
             msgrecv = receive_from_server(sockfd);
 
 
-
             if (strstr(msgrecv, "\"id\"") != NULL) {
-                // {"description":"test","id":75707,"rating":"6.0","title":"test","user_id":27291,"year":2000}
-            /*
-                    [
-                    {
-                        "id": Number,
-                        "title": String,
-                        "owner": String,
-                        "movies": [
-                        {
-                            "id": Number,
-                            "title": String
-                        }
-                        ]
-                    }
-                    ]
-                    */
                 char *content_ptr = strstr(msgrecv, "{\"id");
                 JSON_Value *root_value = json_parse_string(content_ptr);
                 JSON_Object *root_object = json_value_get_object(root_value);
@@ -1013,9 +845,11 @@ int main(int argc, char *argv[])
             } else if (strstr(msgrecv, "Collection not found") != NULL) {
                  printf("ERROR: Collection not found, invalid id\n");
             } else {
-                printf("ERROR: serverul zice ca nu am acces la Collections\n");
+                printf("ERROR: not allowed\n");
             }
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             // print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
 
@@ -1024,31 +858,6 @@ int main(int argc, char *argv[])
         if (strcmp(buff.data, "add_collection\n") == 0) {
             /*
             POST /api/v1/tema/library/collections
-            Tip payload:
-
-            application/json
-            Payload:
-
-            {
-            "title": String
-            }
-            Observații:
-            🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
-            ❗ Owner este utilizatorul curent.
-
-            Erori tratate:
-            👎 Fără acces library.
-            👎 Date invalide/incomplete.
-
-            Input
-            add_collection
-            title=Must See
-            num_movies=2
-            movie_id[0]=1
-            movie_id[1]=3
-            Output
-            SUCCESS: Colecție adăugată
-
             */
             char *url = "/api/v1/tema/library/collections";
             printf("title=\n");
@@ -1064,18 +873,8 @@ int main(int argc, char *argv[])
             sscanf(nm, "%d", &num_movies);
 
             char id[10];
-            // char movie_ids[200];
-            // sprintf(movie_ids, "%s ", nm);
-            // movie_ids[0] = '\0';
+
             char collection_id[100];
-            // for (size_t i = 0; i < num_movies; i++) {
-            //     memset(id, 0, sizeof(id));
-            //     printf("movie_id[%ld]=\n", i);
-            //     fgets(id, sizeof(id), stdin);
-            //     replace_char(id, '\n', '\0');
-            //     strcat(movie_ids, id);
-            //     strcat(movie_ids, " ");
-            // }
 
             char json_string[100];
             sprintf(json_string, "{\"title\":\"%s\"}", title);
@@ -1086,6 +885,8 @@ int main(int argc, char *argv[])
             msgrecv = receive_from_server(sockfd);
             if (strstr(msgrecv, "Collection already exists")) {
                 printf("ERROR: Collection already exists\n");
+            } else if (strstr(msgrecv, "UNAUTHORIZED") != NULL) {
+                printf("ERROR: not allowed\n");
             } else if (strstr(msgrecv, "400 BAD REQUEST")) {
                 printf("ERROR: datele add_collection sunt incomplete\n");
             } else {
@@ -1107,7 +908,9 @@ int main(int argc, char *argv[])
 
             }
 
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             print_messages(message, msgrecv);
             add_cookie(cookies, session_cookies, msgrecv);
             
@@ -1117,20 +920,6 @@ int main(int argc, char *argv[])
         if (strcmp(buff.data, "delete_collection\n") == 0) {
             /*
                 DELETE /api/v1/tema/library/collections/:collectionId
-                Observații:
-                🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
-                ❗ Trebuie să fiți owner.
-
-                Erori tratate:
-                👎 Fără acces library.
-                👎 Nu sunteți owner.
-                👎 ID invalid.
-
-                Input
-                    delete_collection
-                    id=10
-                    Output
-                        SUCCESS: Colecție ștearsă
             */
             printf("id=\n");
             char id[50];
@@ -1148,40 +937,23 @@ int main(int argc, char *argv[])
                 printf("SUCCESS: Colecție ștearsă\n");
             } else if (strstr(msgrecv, "UNAUTHORIZED") != NULL) {
                 printf("ERROR: nu sunt permisiuni\n");
+            } else if (strstr(msgrecv, "FORBIDDEN") != NULL) {
+                printf("ERROR: must be owner\n");
             } else {
                 printf("ERROR: nu s-a gasit colecția\n");
             }
 
             print_messages(message, msgrecv);
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             add_cookie(cookies, session_cookies, msgrecv);
 
         } else 
         // --------------------- delete_movie_from_collection ---------------------
         if (strcmp(buff.data, "delete_movie_from_collection\n") == 0) {
             /*
-                Ruta de acces:
-
                 DELETE /api/v1/tema/library/collections/:collectionId/movies/:movieId
-                e.g: /api/v1/tema/library/collections/5/movies/123
-
-                Observații:
-                🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
-                ❗Trebuie să fiți owner.
-                ❗ Filmul trebuie să existe în colecție.
-
-                Erori tratate:
-                👎 Fără acces library.
-                👎 Nu sunteți owner.
-                👎 ID invalid.
-
-                Input
-                    delete_movie_from_collection
-                    collection_id=10
-                    movie_id=3
-                    Output
-
-                    SUCCESS: Film șters din colecție
             */
             printf("collection_id=\n");
             char collection_id[50];
@@ -1204,12 +976,16 @@ int main(int argc, char *argv[])
                 printf("SUCCESS: Film șters din colecție\n");
             } else if (strstr(msgrecv, "UNAUTHORIZED") != NULL) {
                 printf("ERROR: nu sunt permisiuni\n");
+            } else if (strstr(msgrecv, "FORBIDDEN") != NULL) {
+                printf("ERROR: must be owner\n");
             } else {
                 printf("ERROR: nu s-a gasit colecția\n");
             }
 
             print_messages(message, msgrecv);
-
+            if(strstr(msgrecv, "Connection: close")) {
+                sockfd = open_connection(host_ip, portno, AF_INET, SOCK_STREAM, 0);
+            }
             add_cookie(cookies, session_cookies, msgrecv);
 
         } else 
@@ -1217,30 +993,7 @@ int main(int argc, char *argv[])
         if (strcmp(buff.data, "add_movie_to_collection\n") == 0) {
             /*
                 POST /api/v1/tema/library/collections/:collectionId/movies
-                Tip payload:
-
-                {
-                "id": Number
-                }
-                Observații:
-                🍪 Trebuie să demonstraţi că aveţi acces la library! (JWT token)
-                ❗ Trebuie să fiți owner.
-
-                Erori tratate:
-                👎 Fără acces library.
-                👎 Nu sunteți owner.
-                👎 Date invalide/incomplete.
-
-                Input
-                add_movie_to_collection
-                collection_id=10
-                movie_id=3
-                Output
-
-                SUCCESS: Film adăugat în colecție
-
             */
-
 
             printf("collection_id=\n");
             char collection_id[50];
@@ -1265,9 +1018,6 @@ int main(int argc, char *argv[])
         buffer_destroy(&buff);
 
     }
-    free(cookies[0]);
-    free(cookies[1]);
-    free(cookies);
 
     close_connection(sockfd);
     return 0;
