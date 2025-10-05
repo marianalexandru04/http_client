@@ -1,12 +1,11 @@
-# HTTP Client - Management Film Server - Tema 3 PCOM
+# HTTP Client - Management Film Server
 
-**Autor: Panait Marian-Alexandru 323CB**
+**Autor: Panait Marian-Alexandru**
 
-Acestă temă reprezintă realizarea unui client scris în C care comunică cu un server HTTP pentru a gestiona utilizatori, filme și colecții de filme. Comunicarea se realizează prin API-ul de socket-uri, conform specificațiilor laboratorului de HTTP.
+Acest proiect reprezintă realizarea unui client scris în C care comunică cu un server HTTP pentru a gestiona utilizatori, filme și colecții de filme. Comunicarea se realizează prin API-ul de socket-uri in limbajul C.
 
 ## 📋 Funcționalități implementate
 
-Implementarea a fost începută plecând de la scheletul laboratoului de HTTP. 
 Clientul interpretează comenzi introduse de la tastatură și trimite cereri către server în format JSON (dacă este cazul). Răspunsurile serverului sunt afișate în consolă, conform convențiilor de mesaje.
 
 ## 📜 Comenzi disponibile
