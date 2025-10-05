@@ -13,4 +13,9 @@ char *compute_post_request(char *host, char *url, char* content_type, char *body
 
 char *compute_delete_request(char *host, char *url,
                           char **cookies, int cookies_count);
+        
+char * compute_put_request(char *host, char *url, char **cookies,
+                            int cookies_count, char *content); 
+
+
 #endif

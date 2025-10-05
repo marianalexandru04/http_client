@@ -57,8 +57,9 @@ void send_to_server(int sockfd, char *message)
 
     do
     {
-        bytes = write(sockfd, message + sent, total - sent);
+        bytes = send(sockfd, message + sent, total - sent, 0);
         if (bytes < 0) {
+            printf("BIG ERROR\n");
             error("ERROR writing message to socket");
         }
 
