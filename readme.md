@@ -48,7 +48,7 @@ Pentru fiecare comandă:
 
 ### Managementul Cookie-urilor și Token-urilor
 
-Clientul gestionează cookie-urile de sesiune și token-urile JWT pentru autentificare și autorizare:
+Clientul gestionează cookieurile de sesiune și token-urile JWT pentru autentificare și autorizare:
 
 *   **Cookie-uri generale**: Sunt stocate în `cookies[0]`. Acestea sunt extrase din răspunsurile serverului (din header-ul `Set-Cookie`) și trimise în cererile ulterioare.
 *   **Token JWT**: Este stocat în `cookies[1]`. Token-ul este obținut după comanda `get_access` și este necesar pentru majoritatea operațiunilor legate de filme și colecții.
@@ -62,3 +62,4 @@ Pentru comenzile care necesită trimiterea de date în format JSON (ex: `login_a
 *   `matrix_names`: Această matrice stochează numele câmpurilor corespunzătoare valorilor din `matrix` (de exemplu, "username", "password", "title").
 
 După ce datele sunt citite de la utilizator și populate în aceste matrici, funcția `json_builder(matrix, matrix_names)` este apelată. Această funcție parcurge cele două matrici și construiește string-ul JSON corespunzător, utilizând biblioteca `parson`. String-ul JSON rezultat este apoi inclus în corpul cererii POST sau PUT.
+
